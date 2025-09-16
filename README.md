@@ -26,7 +26,7 @@ erDiagram
     bigint id PK
     bigint user_id FK
     bigint points "例: 100, -50 etc.."
-    tinyint ADD_type "付与タイプ (nullable)"
+    tinyint add_type "付与タイプ (nullable)"
     tinyint used_type "消費タイプ (nullable)"
     string description "タイプごとのコメント"
     datetime expiration_datetime "有効期限 (nullable)"
@@ -37,9 +37,9 @@ erDiagram
 
 # 実装
 
-以下2つのクラスを追加。
+以下の2つのクラスを追加。
 
-### 1. ポイントタイプやコメントの定数を管理する`PointConst`クラス
+### 1. ポイントの定数を管理する`PointConst`クラス
 
 <details>
 
@@ -89,7 +89,9 @@ use Carbon\Carbon;
 
 class PointService
 {
-    // 付与
+    /**
+    * 付与処理
+    */
     public function add(int $getType, int $points, int $userId): PointHistory
     {
         if ($points <= 0) {
@@ -110,7 +112,9 @@ class PointService
         });
     }
 
-    // 消費
+    /**
+    * 消費処理
+    */
     public function used(int $usedType, int $points, int $userId): ?PointHistory
     {
         if ($points <= 0) {
@@ -134,12 +138,9 @@ class PointService
         });
     }
 
-     // 利用可能ポイント総数を取得
-     private function __balance(int $userId): int {
-        return (int) PointHistory::where('user_id', $userId)->sum('points');
-    }
-
-    // 失効
+    /**
+    * 失効処理
+    */
     public function expire(int $userId): ?PointHistory
     {
         return DB::transaction(function () use ($userId) {
@@ -199,6 +200,13 @@ class PointService
             ]);
         });
     }
+
+    /**
+    * 残高を取得
+    */
+    private function __balance(int $userId): int {
+        return (int) PointHistory::where('user_id', $userId)->sum('points');
+    }
 }
 ```
 </details>
@@ -206,9 +214,12 @@ class PointService
 
 ## 付与処理
 
-- ポイント付与処理が含まれるControllerのactionで
-    - `PointService`をインスタンス化。
-    - `ポイント付与タイプ` `ポイント数` `ユーザーID`を引数に、`PointService`の`add`メソッドを実行して`point_histories`テーブルを更新。
+- 実行タイミング
+  - ポイント付与処理が含まれるリクエストが来た時
+    - ※ Controllerのaction内で`PointService`をインスタンス化。
+- 実行プログラム
+    - `ポイント付与タイプ` `ポイント数` `ユーザーID`を引数に、`PointService`の`add`メソッドを実行。
+    - `pint_histories`テーブルを更新。
 
 ```mermaid
 sequenceDiagram
@@ -219,9 +230,12 @@ sequenceDiagram
 
 ## 消費処理
 
-- ポイント消費処理が含まれるControllerのactionで
-    - `PointService`をインスタンス化。
-    - `ポイント消費タイプ` `ポイント数` `ユーザーID`を引数に、`PointService`の`used`メソッドを実行して`point_histories`テーブルを更新。
+- 実行タイミング
+  - ポイント消費処理が含まれるリクエストが来た時
+    - ※ Controllerのaction内で`PointService`をインスタンス化。
+- 実行プログラム
+    - `ポイント消費タイプ` `ポイント数` `ユーザーID`を引数に、`PointService`の`used`メソッドを実行。
+    - `pint_histories`テーブルを更新。
 
 ```mermaid
 sequenceDiagram
@@ -232,5 +246,8 @@ sequenceDiagram
 
 ## 失効処理
 
-- cronジョブで実行（毎日深夜0:00に実行）。
-- ユーザーごとに`PointService`の`expire`メソッドで、失効ポイントを集計し`pint_histories`テーブルを更新。
+- 実行タイミング
+    - 毎日深夜0:00にArtisanコマンドを実行（cronジョブで実行）。
+- 実行プログラム
+  - ユーザーごとに`PointService`の`expire`メソッドで、失効ポイントを集計。
+  - `pint_histories`テーブルを更新。
