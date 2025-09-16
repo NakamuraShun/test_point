@@ -92,21 +92,21 @@ class PointService
     /**
     * 付与処理
     */
-    public function add(int $getType, int $points, int $userId): PointHistory
+    public function add(int $addType, int $points, int $userId): PointHistory
     {
         if ($points <= 0) {
             throw new InvalidArgumentException('points must be positive.');
         }
 
-        return DB::transaction(function () use ($getType, $points, $userId) {
+        return DB::transaction(function () use ($addType, $points, $userId) {
             // 同一ユーザーの履歴をロック
             PointHistory::where('user_id', $userId)->lockForUpdate()->get();
 
             return PointHistory::create([
                 'user_id'          => $userId,
                 'points'           => $points, // 正
-                'ADD_type'         => $getType,
-                'description'      => PointConst::ADD_TYPE_DESCRIPTIONS[$getType] ?? '',
+                'add_type'         => $addType,
+                'description'      => PointConst::ADD_TYPE_DESCRIPTIONS[$addType] ?? '',
                 'expiration_datetime' => Carbon::now()->addYear(),
             ]);
         });
@@ -156,9 +156,9 @@ class PointService
                 return null;
             }
 
-            // 付与履歴を有効期限が長い順で取得
-            $getTypePointHistories = PointHistory::where('user_id', $userId)
-                ->whereNotNull('ADD_type')
+            // 有効期限が長い順で付与履歴を取得
+            $addTypePointHistories = PointHistory::where('user_id', $userId)
+                ->whereNotNull('add_type')
                 ->orderBy('expiration_datetime', 'DESC')
                 ->orderBy('id', 'DESC')
                 ->get();
@@ -166,7 +166,7 @@ class PointService
             $rest = $balance; // 残りの残高
             $toExpire = 0; // 失効させるポイントの合計
 
-            foreach ($getTypePointHistories as $pointHistory) {
+            foreach ($addTypePointHistories as $pointHistory) {
                 if ($rest <= 0) break;
 
                 $getPoints = (int) $pointHistory->points;
@@ -224,7 +224,7 @@ class PointService
 ```mermaid
 sequenceDiagram
      ユーザー ->> コントローラ（Contract or Cart..etc）: 商材の契約 / 物販購入リクエスト
-     コントローラ（Contract or Cart..etc） ->> PointService : add(getType, points, userId)
+     コントローラ（Contract or Cart..etc） ->> PointService : add(addType, points, userId)
      PointService ->> DB : point_historiesテーブルを更新
 ```
 
