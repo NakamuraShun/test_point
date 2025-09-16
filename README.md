@@ -169,11 +169,11 @@ class PointService
             foreach ($addTypePointHistories as $pointHistory) {
                 if ($rest <= 0) break;
 
-                $getPoints = (int) $pointHistory->points;
-                if ($getPoints <= 0) continue;
+                $addPoints = (int) $pointHistory->points;
+                if ($addPoints <= 0) continue;
 
                 // 有効な付与ポイントが、残りの残高の部分のみの場合を考慮
-                $take = min($rest, $getPoints);
+                $take = min($rest, $addPoints);
 
                 // 有効な付与ポイントが、期限切れなら失効対象
                 $isExpired = $pointHistory->expiration_datetime
