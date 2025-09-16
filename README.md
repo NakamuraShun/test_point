@@ -247,7 +247,7 @@ sequenceDiagram
 ## 失効処理
 
 - 実行タイミング
-    - 毎日深夜0:00にArtisanコマンドを実行（cronジョブで実行）。
+    - `Schedule`ファザードを活用し、毎日深夜0:00に実行されるようにスケジュールを定義。
 - 実行プログラム
   - ユーザーごとに`PointService`の`expire`メソッドで、失効ポイントを集計。
   - `pint_histories`テーブルを更新。
