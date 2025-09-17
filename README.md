@@ -13,7 +13,7 @@
   - 付与や消費のタイミングは存在する。
   - 有効期限を過ぎると失効ポイント扱いになる。
     - 有効期限は1年間とする。
-    - 消費は有効期限まで短い付与ポイントから消費される。
+    - 消費は有効期限が短い付与ポイントから消費される。
 
 # 設計
 
@@ -25,13 +25,14 @@ erDiagram
   point_histories {
     bigint id PK
     bigint user_id FK
-    bigint points "例: 100, -50 etc.."
+    bigint points "例: 100, -50 etc."
     tinyint add_type "付与タイプ (nullable)"
     tinyint used_type "消費タイプ (nullable)"
     string description "タイプごとのコメント"
     datetime expiration_datetime "有効期限 (nullable)"
     timestamp created_at
-    timestamp deleted_at
+    timestamp updated_at
+    timestamp deleted_at "ソフトデリート有効"
   }
 ```
 
@@ -86,6 +87,7 @@ namespace App\Services;
 use App\Models\PointHistory;
 use App\Constants\PointConst;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class PointService
 {
@@ -219,7 +221,7 @@ class PointService
     - ※ Controllerのaction内で`PointService`をインスタンス化。
 - 実行プログラム
     - `ポイント付与タイプ` `ポイント数` `ユーザーID`を引数に、`PointService`の`add`メソッドを実行。
-    - `pint_histories`テーブルを更新。
+    - `point_histories`テーブルを更新。
 
 ```mermaid
 sequenceDiagram
@@ -235,7 +237,7 @@ sequenceDiagram
     - ※ Controllerのaction内で`PointService`をインスタンス化。
 - 実行プログラム
     - `ポイント消費タイプ` `ポイント数` `ユーザーID`を引数に、`PointService`の`used`メソッドを実行。
-    - `pint_histories`テーブルを更新。
+    - `point_histories`テーブルを更新。
 
 ```mermaid
 sequenceDiagram
@@ -247,7 +249,13 @@ sequenceDiagram
 ## 失効処理
 
 - 実行タイミング
-    - `Schedule`ファザードを活用し、毎日深夜0:00に実行されるようにスケジュールを定義。
+    - `Schedule`ファサードを活用し、毎日深夜0:00に実行されるようにスケジュールを定義。
 - 実行プログラム
   - ユーザーごとに`PointService`の`expire`メソッドで、失効ポイントを集計。
-  - `pint_histories`テーブルを更新。
+  - `point_histories`テーブルを更新。
+
+# 補足
+
+### ポイント付与を取り消す場合の処理
+
+返品などでポイント付与を釣り消す場合は、`PointHistory`モデルはソフトデリートが有効なので`delete`メソッドで論理削除する。
