@@ -38,7 +38,7 @@ erDiagram
 
 # 実装
 
-以下の2つのクラスを追加。
+- `point_histories`テーブルに対応する`PointHistory`モデル以外に、以下の2つのクラスを追加。
 
 ### 1. ポイントの定数を管理する`PointConst`クラス
 
